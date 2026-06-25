@@ -33,20 +33,26 @@ export const SPLIT = {
 // ─── State shape ──────────────────────────────────────────────────────────────
 
 export interface StreamState {
-  /** Reader wallet balance in USDC */
+  /** Reader wallet balance in USDC (synced from Arc testnet) */
   balance: number;
+  /** Real on-chain balance from Arc testnet */
+  onChainBalance: number | null;
+  /** Whether on-chain balance is loaded */
+  onChainLoaded: boolean;
   /** Total seconds spent reading in this session */
   elapsed: number;
   /** Total USDC spent this session */
   sessionSpend: number;
   /** Whether the reader agent is actively streaming */
   playing: boolean;
+  /** Last real tx hash from Arc */
+  lastTxHash: string | null;
   /** Creator earnings breakdown (running totals) */
   earnings: {
-    creator: number;   // 90% of all spend
-    curator: number;   // 5%
-    platform: number;  // 5%
-    total: number;     // = sessionSpend
+    creator: number;
+    curator: number;
+    platform: number;
+    total: number;
   };
 }
 
@@ -56,7 +62,8 @@ type Action =
   | { type: "RESUME" }
   | { type: "RESET" }
   | { type: "TOPUP"; amount: number }
-  | { type: "WITHDRAW"; amount: number };
+  | { type: "WITHDRAW"; amount: number }
+  | { type: "SYNC_BALANCE"; onChainBalance: number; txHash?: string };
 
 // ─── Reducer ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +101,14 @@ function reducer(state: StreamState, action: Action): StreamState {
         ...state,
         balance: Math.max(0, state.balance - action.amount),
       };
+    case "SYNC_BALANCE":
+      return {
+        ...state,
+        onChainBalance: action.onChainBalance,
+        onChainLoaded: true,
+        balance: action.onChainBalance, // show real balance in UI
+        lastTxHash: action.txHash ?? state.lastTxHash,
+      };
     case "PAUSE":
       return { ...state, playing: false };
     case "RESUME":
@@ -108,9 +123,12 @@ function reducer(state: StreamState, action: Action): StreamState {
 function initialState(): StreamState {
   return {
     balance: INITIAL_BALANCE,
+    onChainBalance: null,
+    onChainLoaded: false,
     elapsed: 0,
     sessionSpend: 0,
-    playing: true, // auto-start on load (prompt 2)
+    playing: true,
+    lastTxHash: null,
     earnings: { creator: 0, curator: 0, platform: 0, total: 0 },
   };
 }
@@ -133,10 +151,42 @@ const Ctx = createContext<StreamCtx | null>(null);
 export function StreamProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
-  // Tick every second — always running, reducer guards against charging when paused
+  // Tick every second — also triggers real Arc payment when playing
   useEffect(() => {
-    intervalRef.current = setInterval(() => dispatch({ type: "TICK" }), 1000);
+    // Fetch initial on-chain balance on load
+    fetch("http://localhost:3001/api/balance", { signal: AbortSignal.timeout(3000) })
+      .then(r => r.json())
+      .then(data => dispatch({ type: "SYNC_BALANCE", onChainBalance: parseFloat(data.balance) }))
+      .catch(() => {});
+
+    intervalRef.current = setInterval(async () => {
+      dispatch({ type: "TICK" });
+
+      // Fire real Arc testnet payment in background (non-blocking)
+      if (stateRef.current.playing && stateRef.current.balance > 0) {
+        try {
+          const res = await fetch("http://localhost:3001/api/pay", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            signal: AbortSignal.timeout(3000),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            dispatch({
+              type: "SYNC_BALANCE",
+              onChainBalance: parseFloat(data.balance),
+              txHash: data.hash,
+            });
+            console.log(`[Arc] Tx: ${data.hash?.slice(0, 12)}... | On-chain balance: $${data.balance} USDC`);
+          }
+        } catch {
+          // Payment server not running — UI simulation continues
+        }
+      }
+    }, 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };

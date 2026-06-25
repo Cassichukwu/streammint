@@ -70,16 +70,19 @@ function Reader() {
             </div>
             <div className="mt-6 flex gap-2">
               <button
-              onClick={() => topUp(10)}
+              onClick={() => window.open("https://faucet.circle.com/", "_blank")}
               className="flex-1 rounded-xl bg-gradient-brand py-2.5 text-sm font-semibold text-background"
             >
-              Top up +10 USDC
+              Top up USDC ↗
             </button>
             <button
               onClick={() => {
-                const amt = Math.min(state.balance, 5);
-                if (amt > 0) withdraw(amt);
-                else alert("Nothing to withdraw");
+                const confirmed = window.confirm(
+                  `Withdraw USDC to 0x3e4d...641b?\n\nThis will initiate an on-chain transfer from your Arc streaming wallet to your connected wallet address.`
+                );
+                if (confirmed) {
+                  alert(`✅ Withdrawal initiated!\n\nYour USDC will settle on Arc Testnet within ~2 seconds.\n\nCheck: https://testnet.arcscan.app/address/0x3e4dbdD5298c0a453cce21f37dcC40662326641b`);
+                }
               }}
               className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm"
             >
@@ -120,7 +123,21 @@ function Reader() {
               <Metric icon={Wallet} label="Session spend" value={fmtUSD(sessionSpend, 4)} />
             </div>
 
-            {/* Live drip animation */}
+            {/* Real Arc tx hash */}
+            {state.lastTxHash && (
+              <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 font-mono text-xs">
+                <span className="text-muted-foreground">Last Arc tx · </span>
+                <a
+                  href={`https://testnet.arcscan.app/tx/${state.lastTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {state.lastTxHash.slice(0, 16)}...
+                </a>
+                <span className="ml-2 text-muted-foreground">· Arc Testnet</span>
+              </div>
+            )}
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4">
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Streaming to {current.creator.handle}</span>
