@@ -64,7 +64,7 @@ function Hero() {
             {[
               { k: "Paid to creators", v: "$4.2M", sub: "last 30d" },
               { k: "Avg session cost", v: "$0.04", sub: "per agent" },
-              { k: "Settlement", v: "<400ms", sub: "Base L2" },
+              { k: "Settlement", v: "<400ms", sub: "Arc Testnet" },
             ].map((s) => (
               <div key={s.k}>
                 <dd className="text-2xl font-semibold tracking-tight">{s.v}</dd>

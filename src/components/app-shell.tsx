@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="flex flex-col leading-none">
               <span className="text-base font-semibold tracking-tight">StreamMint</span>
-              <span className="font-mono text-[10px] text-muted-foreground">USDC · Mainnet</span>
+              <span className="font-mono text-[10px] text-muted-foreground">USDC · Arc Testnet</span>
             </div>
           </Link>
 
@@ -54,7 +54,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <div className="hidden items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 font-mono text-xs text-muted-foreground md:flex">
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-primary" />
-              <span>Live · Base L2</span>
+              <span>Live · Arc Testnet</span>
             </div>
             <Link
               to="/reader"

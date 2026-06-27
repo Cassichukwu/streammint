@@ -66,7 +66,7 @@ function Explorer() {
           <div>
             <div className="font-mono text-xs uppercase tracking-widest text-primary">Network</div>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight md:text-5xl">Transaction Explorer</h1>
-            <p className="mt-1 text-muted-foreground">Real-time micropayments · Base L2 · Block #{(18_402_188).toLocaleString()}</p>
+            <p className="mt-1 text-muted-foreground">Real-time micropayments · Arc Testnet · Block #{(18_402_188).toLocaleString()}</p>
           </div>
           <div className="glass flex items-center gap-2 rounded-full px-4 py-2">
             <Search className="h-4 w-4 text-muted-foreground" />

@@ -113,7 +113,7 @@ function PageHeader() {
       `Withdraw $${total.toFixed(4)} USDC to 0x7f3a…91c2?\n\nThis will initiate an on-chain transfer to your connected wallet.`
     );
     if (confirmed) {
-      alert(`✅ Withdrawal of $${total.toFixed(4)} USDC initiated!\n\nTransaction will settle on Base L2 within ~2 seconds.`);
+      alert(`✅ Withdrawal of $${total.toFixed(4)} USDC initiated!\n\nTransaction will settle on Arc Testnet within ~2 seconds.`);
     }
   }
 
