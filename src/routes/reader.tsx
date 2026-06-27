@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Pause, Play, Wallet, Clock, BookOpen, Sparkles, ArrowUpRight } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { ARTICLES, fmtUSD } from "@/lib/mock";
@@ -30,7 +31,8 @@ export const Route = createFileRoute("/reader")({
 function Reader() {
   const { state, pause, resume, topUp, withdraw } = useStream();
   const { balance, elapsed, sessionSpend, playing } = state;
-  const current = ARTICLES[2];
+  const [currentIndex, setCurrentIndex] = useState(2);
+  const current = ARTICLES[currentIndex];
 
   return (
     <AppShell>
@@ -159,7 +161,7 @@ function Reader() {
         {/* History + Recs — unchanged */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <ConsumptionHistory sessionSpend={sessionSpend} />
-          <Recommendations />
+          <Recommendations onSelect={setCurrentIndex} />
         </div>
       </div>
     </AppShell>
@@ -209,14 +211,18 @@ function ConsumptionHistory({ sessionSpend }: { sessionSpend: number }) {
   );
 }
 
-function Recommendations() {
+function Recommendations({ onSelect }: { onSelect: (index: number) => void }) {
   return (
     <div className="glass rounded-3xl p-6">
       <h3 className="text-lg font-semibold">Recommended for your agent</h3>
       <p className="mt-1 text-xs text-muted-foreground">Ranked by intent match · refreshed 32s ago</p>
       <div className="mt-4 space-y-3">
-        {ARTICLES.slice(0, 4).map((a) => (
-          <div key={a.id} className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:bg-white/5">
+        {ARTICLES.slice(0, 4).map((a, i) => (
+          <div
+            key={a.id}
+            onClick={() => onSelect(i)}
+            className="group flex cursor-pointer items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-3 transition-colors hover:bg-white/10 hover:border-primary/20"
+          >
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-brand text-background font-mono text-sm font-semibold">
               {a.creator.avatar}
             </div>
