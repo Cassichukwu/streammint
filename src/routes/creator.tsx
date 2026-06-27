@@ -90,6 +90,15 @@ function Creator() {
 function PageHeader() {
   const { state } = useStream();
   const BASE_EARNINGS = 8421.6042;
+  const [sellerBalance, setSellerBalance] = useState<string | null>(null);
+  const [withdrawing, setWithdrawing] = useState(false);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/api/seller-balance")
+      .then(r => r.json())
+      .then(d => setSellerBalance(d.balance))
+      .catch(() => {});
+  }, [state.earnings.total]);
 
   function handleExportCSV() {
     const rows = [
@@ -107,13 +116,37 @@ function PageHeader() {
     URL.revokeObjectURL(url);
   }
 
-  function handleWithdraw() {
-    const total = BASE_EARNINGS + state.earnings.creator;
-    const confirmed = window.confirm(
-      `Withdraw $${total.toFixed(4)} USDC to 0x7f3a…91c2?\n\nThis will initiate an on-chain transfer to your connected wallet.`
+  async function handleWithdraw() {
+    const balance = sellerBalance ?? "0";
+    const destination = window.prompt(
+      `Withdraw $${balance} USDC from creator wallet\n\nEnter destination wallet address:`,
+      "0xC37DcB82DE94cfFb98be438425B6505f80826A00"
     );
-    if (confirmed) {
-      alert(`✅ Withdrawal of $${total.toFixed(4)} USDC initiated!\n\nTransaction will settle on Arc Testnet within ~2 seconds.`);
+    if (!destination) return;
+
+    const confirmed = window.confirm(
+      `Withdraw $${balance} USDC to ${destination.slice(0, 8)}...?\n\nThis will send real USDC on Arc Testnet.`
+    );
+    if (!confirmed) return;
+
+    setWithdrawing(true);
+    try {
+      const res = await fetch("http://localhost:3001/api/withdraw", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: destination, amount: balance }),
+      });
+      const data = await res.json();
+      if (data.hash) {
+        alert(`✅ Withdrawal successful!\n\nTx: ${data.hash}\n\nView on Arc Explorer:\nhttps://testnet.arcscan.app/tx/${data.hash}`);
+        setSellerBalance("0");
+      } else {
+        alert(`❌ Error: ${data.error}`);
+      }
+    } catch (err) {
+      alert("❌ Withdrawal failed. Is the payment server running?");
+    } finally {
+      setWithdrawing(false);
     }
   }
 
@@ -122,11 +155,16 @@ function PageHeader() {
       <div>
         <div className="font-mono text-xs uppercase tracking-widest text-primary">Dashboard</div>
         <h1 className="mt-2 text-4xl font-semibold tracking-tight md:text-5xl">Creator</h1>
-        <p className="mt-1 text-muted-foreground">Welcome back, <span className="text-foreground">@delphi.research</span>.</p>
+        <p className="mt-1 text-muted-foreground">
+          Welcome back, <span className="text-foreground">@delphi.research</span>.
+          {sellerBalance && <span className="ml-2 font-mono text-xs text-primary">${sellerBalance} USDC available</span>}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={handleExportCSV} className="glass rounded-full px-4 py-2 text-sm hover:bg-white/10 transition-colors">Export CSV</button>
-        <button onClick={handleWithdraw} className="rounded-full bg-gradient-brand px-4 py-2 text-sm font-semibold text-background hover:opacity-90 transition-opacity">Withdraw to bank</button>
+        <button onClick={handleWithdraw} disabled={withdrawing} className="rounded-full bg-gradient-brand px-4 py-2 text-sm font-semibold text-background hover:opacity-90 transition-opacity disabled:opacity-50">
+          {withdrawing ? "Withdrawing..." : "Withdraw to bank"}
+        </button>
       </div>
     </div>
   );

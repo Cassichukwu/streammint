@@ -56,7 +56,28 @@ app.post("/api/pay", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get("/api/seller-balance", async (req, res) => {
+  try {
+    const b = await publicClient.readContract({ address: USDC_ADDRESS, abi: USDC_ABI, functionName: "balanceOf", args: [SELLER] });
+    res.json({ balance: formatUnits(b, 6), address: SELLER });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+app.post("/api/withdraw", async (req, res) => {
+  try {
+    const { to, amount } = req.body;
+    if (!to || !amount) return res.status(400).json({ error: "Missing to or amount" });
+    const sellerAccount = privateKeyToAccount(env.SELLER_PRIVATE_KEY);
+    const sellerWallet = createWalletClient({ account: sellerAccount, chain: arcTestnet, transport: http(env.RPC_URL) });
+    const withdrawAmount = parseUnits(String(amount), 6);
+    const hash = await sellerWallet.sendTransaction({ to, value: withdrawAmount });
+    res.json({ hash, success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 app.listen(3001, () => {
   console.log("StreamMint Payment Server running on http://localhost:3001");
   console.log("Buyer :", buyer.address);
