@@ -74,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Zap className="h-4 w-4 text-primary" />
             <span>StreamMint Protocol · © 2026</span>
           </div>
-          <div className="font-mono text-xs">v0.4.2-alpha · 0x7f3a…91c2</div>
+          <div className="font-mono text-xs">v0.4.2-alpha · 0x3e4d…641b</div>
         </div>
       </footer>
     </div>

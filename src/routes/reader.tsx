@@ -43,7 +43,7 @@ function Reader() {
             <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-xs uppercase text-muted-foreground">
-                <Wallet className="h-3.5 w-3.5" /> Wallet · 0x7f3a…91c2
+                <Wallet className="h-3.5 w-3.5" /> Wallet · 0x3e4d…641b
               </div>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">USDC</span>
             </div>
