@@ -158,7 +158,43 @@ function Reader() {
           </div>
         </div>
 
-        {/* History + Recs — unchanged */}
+        {/* Article content — paywalled, only shows when streaming */}
+        <div className="mt-6 glass rounded-3xl p-7">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 font-mono text-xs uppercase text-primary">
+              <span className={`h-1.5 w-1.5 rounded-full ${playing ? "animate-pulse-dot bg-primary" : "bg-muted-foreground"}`} />
+              {playing ? "Streaming · content unlocked" : "Paused · content locked"}
+            </div>
+            <span className="font-mono text-xs text-muted-foreground">{current.minutes} min read · {current.creator.handle}</span>
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight">{current.title}</h2>
+          <div className="mt-1 text-sm text-muted-foreground">{current.creator.name} · {current.creator.topic}</div>
+          {playing ? (
+            <div className="mt-6 space-y-4 text-sm leading-7 text-muted-foreground">
+              {current.content?.split("\n\n").map((para, i) => (
+                <p key={i} className={para.startsWith("**") ? "font-semibold text-foreground text-base" : ""}>
+                  {para.replace(/\*\*/g, "")}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6 relative">
+              <div className="space-y-3">
+                {[80, 95, 70, 90, 60].map((w, i) => (
+                  <div key={i} className="h-3 rounded-full bg-white/5" style={{ width: `${w}%` }} />
+                ))}
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="glass-strong rounded-2xl px-6 py-4 text-center">
+                  <div className="text-sm font-medium">Content locked</div>
+                  <div className="text-xs text-muted-foreground mt-1">Resume streaming to unlock</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* History + Recs */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <ConsumptionHistory sessionSpend={sessionSpend} />
           <Recommendations onSelect={setCurrentIndex} />
