@@ -5,19 +5,6 @@ import { AppShell } from "@/components/app-shell";
 import { ARTICLES, fmtUSD } from "@/lib/mock";
 import { useStream, RATE_PER_SECOND } from "@/lib/stream-store";
 
-/**
- * reader.tsx — Reader Agent implementation (Prompt 2)
- *
- * Changes from original:
- * - Removed local useState for balance/elapsed/playing
- * - Now uses useStream() hook from stream-store.tsx
- * - Timer auto-starts when page loads (playing: true in initialState)
- * - Charges RATE_PER_SECOND (0.00005 USDC) every second via TICK action
- * - Balance, elapsed, and sessionSpend all update every second via the store
- * - pause/resume wired to Pause/Resume button
- * - UI layout and styling unchanged
- */
-
 export const Route = createFileRoute("/reader")({
   head: () => ({
     meta: [
@@ -28,8 +15,50 @@ export const Route = createFileRoute("/reader")({
   component: Reader,
 });
 
+function WalletConnect() {
+  const [address, setAddress] = useState<string | null>(null);
+
+  function connect() {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      (window as any).ethereum
+        .request({ method: "eth_requestAccounts" })
+        .then((accounts: string[]) => {
+          if (accounts.length > 0) setAddress(accounts[0]);
+        })
+        .catch((err: Error) => console.error(err));
+    } else {
+      window.open("https://metamask.io", "_blank");
+    }
+  }
+
+  function disconnect() {
+    setAddress(null);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">USDC</span>
+      {address ? (
+        <button
+          onClick={disconnect}
+          className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] hover:bg-white/10"
+        >
+          {address.slice(0, 6)}...{address.slice(-4)} · Disconnect
+        </button>
+      ) : (
+        <button
+          onClick={connect}
+          className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary hover:bg-primary/20"
+        >
+          Connect Wallet
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Reader() {
-  const { state, pause, resume, topUp, withdraw } = useStream();
+  const { state, pause, resume } = useStream();
   const { balance, elapsed, sessionSpend, playing } = state;
   const [currentIndex, setCurrentIndex] = useState(2);
   const current = ARTICLES[currentIndex];
@@ -40,17 +69,16 @@ function Reader() {
         <PageHeader title="Reader" subtitle="Your wallet, your time, your bytes." />
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.05fr_1.4fr]">
-          {/* Wallet — balance now driven by stream-store */}
+          {/* Wallet */}
           <div className="glass-strong relative overflow-hidden rounded-3xl p-7">
-            <div className="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
+            <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-xs uppercase text-muted-foreground">
-                <Wallet className="h-3.5 w-3.5" /> Wallet · 0x3e4d…641b
+                <Wallet className="h-3.5 w-3.5" /> Wallet · 0x3e4d...641b
               </div>
-              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">USDC</span>
+              <WalletConnect />
             </div>
             <div className="mt-6">
-              {/* Live balance — decrements every second */}
               <div className="font-mono text-6xl font-semibold tabular-nums tracking-tight">
                 ${balance.toFixed(4)}
               </div>
@@ -72,24 +100,24 @@ function Reader() {
             </div>
             <div className="mt-6 flex gap-2">
               <button
-              onClick={() => window.open("https://faucet.circle.com/", "_blank")}
-              className="flex-1 rounded-xl bg-gradient-brand py-2.5 text-sm font-semibold text-background"
-            >
-              Top up USDC ↗
-            </button>
-            <button
-              onClick={() => {
-                const confirmed = window.confirm(
-                  `Withdraw USDC to 0x3e4d...641b?\n\nThis will initiate an on-chain transfer from your Arc streaming wallet to your connected wallet address.`
-                );
-                if (confirmed) {
-                  alert(`✅ Withdrawal initiated!\n\nYour USDC will settle on Arc Testnet within ~2 seconds.\n\nCheck: https://testnet.arcscan.app/address/0x3e4dbdD5298c0a453cce21f37dcC40662326641b`);
-                }
-              }}
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm"
-            >
-              Withdraw
-            </button>
+                onClick={() => window.open("https://faucet.circle.com/", "_blank")}
+                className="flex-1 rounded-xl bg-gradient-brand py-2.5 text-sm font-semibold text-background"
+              >
+                Top up USDC ↗
+              </button>
+              <button
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Withdraw USDC to 0x3e4d...641b?\n\nThis will initiate an on-chain transfer from your Arc streaming wallet.`
+                  );
+                  if (confirmed) {
+                    alert(`✅ Withdrawal initiated!\n\nYour USDC will settle on Arc Testnet within ~2 seconds.\n\nCheck: https://testnet.arcscan.app/address/0x3e4dbdD5298c0a453cce21f37dcC40662326641b`);
+                  }
+                }}
+                className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm"
+              >
+                Withdraw
+              </button>
             </div>
           </div>
 
@@ -99,12 +127,15 @@ function Reader() {
               <div className="flex items-center gap-2 font-mono text-xs uppercase text-muted-foreground">
                 <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-primary" /> Active session
               </div>
-              {/* Pause / Resume wired to global store */}
               <button
                 onClick={() => (playing ? pause() : resume())}
                 className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs hover:bg-white/10"
               >
-                {playing ? <><Pause className="h-3.5 w-3.5" /> Pause stream</> : <><Play className="h-3.5 w-3.5" /> Resume</>}
+                {playing
+                  ? <><Pause className="h-3.5 w-3.5" /> Pause stream</>
+                  : elapsed === 0
+                  ? <><Play className="h-3.5 w-3.5" /> Start streaming</>
+                  : <><Play className="h-3.5 w-3.5" /> Resume</>}
               </button>
             </div>
 
@@ -119,13 +150,11 @@ function Reader() {
             </div>
 
             <div className="mt-8 grid grid-cols-3 gap-4">
-              {/* elapsed from store — updates every second */}
               <Metric icon={Clock} label="Time read" value={`${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}`} />
               <Metric icon={Sparkles} label="Cost / second" value={fmtUSD(RATE_PER_SECOND, 5)} accent />
               <Metric icon={Wallet} label="Session spend" value={fmtUSD(sessionSpend, 4)} />
             </div>
 
-            {/* Real Arc tx hash */}
             {state.lastTxHash && (
               <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 p-3 font-mono text-xs">
                 <span className="text-muted-foreground">Last Arc tx · </span>
@@ -140,6 +169,7 @@ function Reader() {
                 <span className="ml-2 text-muted-foreground">· Arc Testnet</span>
               </div>
             )}
+
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/30 p-4">
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Streaming to {current.creator.handle}</span>
@@ -158,7 +188,7 @@ function Reader() {
           </div>
         </div>
 
-        {/* Article content — paywalled, only shows when streaming */}
+        {/* Article content */}
         <div className="mt-6 glass rounded-3xl p-7">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 font-mono text-xs uppercase text-primary">
@@ -187,14 +217,13 @@ function Reader() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="glass-strong rounded-2xl px-6 py-4 text-center">
                   <div className="text-sm font-medium">Content locked</div>
-                  <div className="text-xs text-muted-foreground mt-1">Resume streaming to unlock</div>
+                  <div className="text-xs text-muted-foreground mt-1">Start streaming to unlock</div>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* History + Recs */}
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
           <ConsumptionHistory sessionSpend={sessionSpend} />
           <Recommendations onSelect={setCurrentIndex} />

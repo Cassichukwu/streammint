@@ -127,7 +127,7 @@ function initialState(): StreamState {
     onChainLoaded: false,
     elapsed: 0,
     sessionSpend: 0,
-    playing: true,
+    playing: false,
     lastTxHash: null,
     earnings: { creator: 0, curator: 0, platform: 0, total: 0 },
   };
