@@ -47,6 +47,14 @@ app.get("/api/balance", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+app.get("/api/seller-balance", async (req, res) => {
+  try {
+    const b = await publicClient.readContract({ address: USDC_ADDRESS, abi: USDC_ABI, functionName: "balanceOf", args: [SELLER] });
+    res.json({ balance: formatUnits(b, 6), address: SELLER });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post("/api/pay", async (req, res) => {
   try {
