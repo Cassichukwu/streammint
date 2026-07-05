@@ -15,17 +15,37 @@ export const Route = createFileRoute("/reader")({
   component: Reader,
 });
 
-function WalletConnect() {
+function WalletConnect({ onConnect }: { onConnect: (address: string) => void }) {
   const [address, setAddress] = useState<string | null>(null);
 
-  function connect() {
+  async function connect() {
     if (typeof window !== "undefined" && (window as any).ethereum) {
-      (window as any).ethereum
-        .request({ method: "eth_requestAccounts" })
-        .then((accounts: string[]) => {
-          if (accounts.length > 0) setAddress(accounts[0]);
-        })
-        .catch((err: Error) => console.error(err));
+      try {
+        const accounts = await (window as any).ethereum.request({ method: "eth_requestAccounts" });
+        if (accounts.length > 0) {
+          setAddress(accounts[0]);
+          onConnect(accounts[0]);
+          try {
+            await (window as any).ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: "0x4CFE12" }],
+            });
+          } catch {
+            await (window as any).ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [{
+                chainId: "0x4CFE12",
+                chainName: "Arc Testnet",
+                nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+                rpcUrls: ["https://rpc.testnet.arc-node.thecanteenapp.com/v1/swrm_a68619df82c65562963c336a0216fc4cb3bcf592321d71fc9418d34dc31df47a"],
+                blockExplorerUrls: ["https://testnet.arcscan.app"],
+              }],
+            });
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
     } else {
       window.open("https://metamask.io", "_blank");
     }
@@ -33,23 +53,18 @@ function WalletConnect() {
 
   function disconnect() {
     setAddress(null);
+    onConnect("");
   }
 
   return (
     <div className="flex items-center gap-2">
       <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">USDC</span>
       {address ? (
-        <button
-          onClick={disconnect}
-          className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] hover:bg-white/10"
-        >
+        <button onClick={disconnect} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono text-[10px] hover:bg-white/10">
           {address.slice(0, 6)}...{address.slice(-4)} · Disconnect
         </button>
       ) : (
-        <button
-          onClick={connect}
-          className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary hover:bg-primary/20"
-        >
+        <button onClick={connect} className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary hover:bg-primary/20">
           Connect Wallet
         </button>
       )}
@@ -61,7 +76,21 @@ function Reader() {
   const { state, pause, resume } = useStream();
   const { balance, elapsed, sessionSpend, playing } = state;
   const [currentIndex, setCurrentIndex] = useState(2);
+  const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const current = ARTICLES[currentIndex];
+
+  async function handleConnect(address: string) {
+    if (!address) { setWalletBalance(null); return; }
+    try {
+      const res = await fetch(`http://localhost:3001/api/balance?address=${address}`);
+      const data = await res.json();
+      setWalletBalance(parseFloat(data.balance));
+    } catch {
+      setWalletBalance(null);
+    }
+  }
+
+  const displayBalance = walletBalance !== null ? walletBalance : balance;
 
   return (
     <AppShell>
@@ -74,16 +103,16 @@ function Reader() {
             <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/30 blur-3xl" />
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 font-mono text-xs uppercase text-muted-foreground">
-                <Wallet className="h-3.5 w-3.5" /> Wallet · 0x3e4d...641b
+                <Wallet className="h-3.5 w-3.5" /> Wallet · Arc Testnet
               </div>
-              <WalletConnect />
+              <WalletConnect onConnect={handleConnect} />
             </div>
             <div className="mt-6">
               <div className="font-mono text-6xl font-semibold tabular-nums tracking-tight">
-                ${balance.toFixed(4)}
+                ${displayBalance.toFixed(4)}
               </div>
               <div className="mt-2 text-sm text-muted-foreground">
-                ≈ {Math.floor(balance / RATE_PER_SECOND).toLocaleString()} seconds of reading at current rate
+                ≈ {Math.floor(displayBalance / RATE_PER_SECOND).toLocaleString()} seconds of reading at current rate
               </div>
             </div>
             <div className="mt-7 grid grid-cols-3 gap-3">
@@ -108,10 +137,10 @@ function Reader() {
               <button
                 onClick={() => {
                   const confirmed = window.confirm(
-                    `Withdraw USDC to 0x3e4d...641b?\n\nThis will initiate an on-chain transfer from your Arc streaming wallet.`
+                    `Withdraw USDC?\n\nThis will initiate an on-chain transfer from your Arc streaming wallet.`
                   );
                   if (confirmed) {
-                    alert(`✅ Withdrawal initiated!\n\nYour USDC will settle on Arc Testnet within ~2 seconds.\n\nCheck: https://testnet.arcscan.app/address/0x3e4dbdD5298c0a453cce21f37dcC40662326641b`);
+                    alert(`Withdrawal initiated!\n\nYour USDC will settle on Arc Testnet within ~2 seconds.`);
                   }
                 }}
                 className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm"
