@@ -94,7 +94,7 @@ function PageHeader() {
   const [withdrawing, setWithdrawing] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/seller-balance")
+    fetch("https://streammint-payment.emmanuelphilip2021.workers.dev/api/seller-balance")
       .then(r => r.json())
       .then(d => setSellerBalance(d.balance))
       .catch(() => {});
@@ -131,7 +131,7 @@ function PageHeader() {
 
     setWithdrawing(true);
     try {
-      const res = await fetch("http://localhost:3001/api/withdraw", {
+      const res = await fetch("https://streammint-payment.emmanuelphilip2021.workers.dev/api/withdraw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: destination, amount: balance }),

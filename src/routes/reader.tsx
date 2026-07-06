@@ -81,7 +81,7 @@ function Reader() {
   async function handleConnect(address: string) {
     if (!address) { setWalletBalance(null); return; }
     try {
-      const res = await fetch(`http://localhost:3001/api/balance?address=${address}`);
+      const res = await fetch(`https://streammint-payment.emmanuelphilip2021.workers.dev/api/balance?address=${address}`);
       const data = await res.json();
       setWalletBalance(parseFloat(data.balance));
     } catch {
