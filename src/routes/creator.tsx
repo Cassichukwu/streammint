@@ -23,17 +23,6 @@ const chartData = Array.from({ length: 30 }, (_, i) => ({
 }));
 
 function Creator() {
-  /**
-   * Prompt 3: Connect Reader Agent to Creator Dashboard.
-   *
-   * We pull live earnings from the global stream store.
-   * earnings.creator = 90% of reader's session spend
-   * earnings.curator = 5%
-   * earnings.platform = 5%
-   *
-   * The base earnings (8421.60) represent historical earnings.
-   * Live session earnings from the Reader Agent are added on top.
-   */
   const { state } = useStream();
   const BASE_EARNINGS = 8421.6042;
   const liveCreatorEarnings = BASE_EARNINGS + state.earnings.creator;
@@ -44,12 +33,12 @@ function Creator() {
       <div className="mx-auto max-w-7xl px-6 py-10">
         <PageHeader />
 
-        {/* Live revenue split panel — shows reader session earnings breakdown */}
+        {/* Live revenue split panel */}
         {state.earnings.total > 0 && (
           <div className="mt-6 glass rounded-2xl p-4 border border-primary/20 flex flex-wrap gap-6 items-center">
             <div className="flex items-center gap-2 text-xs text-primary font-mono uppercase">
               <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-primary" />
-              Live reader session · revenue split
+              Live reader session · revenue split · Arc Testnet
             </div>
             <div className="flex gap-6 font-mono text-sm">
               <span>Creator <span className="text-primary">(90%) +{fmtUSD(state.earnings.creator, 5)}</span></span>
@@ -59,17 +48,17 @@ function Creator() {
           </div>
         )}
 
-        {/* KPI Strip — Live earnings now driven by Reader Agent */}
+        {/* KPI Strip */}
         <div className="mt-4 grid gap-4 md:grid-cols-4">
           <KPI
-            label="Live earnings"
+            label="Live earnings (real)"
             value={fmtUSD(liveCreatorEarnings, 4)}
             delta={state.playing ? `+${fmtUSD(liveRate, 5)}/s` : "+$0.0024/s"}
             highlight
           />
-          <KPI label="30d revenue" value="$12,840.21" delta="+18.4%" />
-          <KPI label="Active agents" value="3,418" delta="+221 today" />
-          <KPI label="Avg dwell" value="6m 42s" delta="+0:18" />
+          <KPI label="30d revenue" value="$12,840.21" delta="+18.4%" demo />
+          <KPI label="Active agents" value="3,418" delta="+221 today" demo />
+          <KPI label="Avg dwell" value="6m 42s" delta="+0:18" demo />
         </div>
 
         {/* Main */}
@@ -103,8 +92,8 @@ function PageHeader() {
   function handleExportCSV() {
     const rows = [
       ["Timestamp", "Type", "Amount USDC", "Creator 90%", "Curator 5%", "Platform 5%"],
-      [new Date().toISOString(), "Session earnings", state.earnings.total.toFixed(6), state.earnings.creator.toFixed(6), state.earnings.curator.toFixed(6), state.earnings.platform.toFixed(6)],
-      [new Date(Date.now() - 86400000).toISOString(), "Historical", BASE_EARNINGS.toFixed(6), (BASE_EARNINGS * 0.9).toFixed(6), (BASE_EARNINGS * 0.05).toFixed(6), (BASE_EARNINGS * 0.05).toFixed(6)],
+      [new Date().toISOString(), "Session earnings (real)", state.earnings.total.toFixed(6), state.earnings.creator.toFixed(6), state.earnings.curator.toFixed(6), state.earnings.platform.toFixed(6)],
+      [new Date(Date.now() - 86400000).toISOString(), "Historical (simulated)", BASE_EARNINGS.toFixed(6), (BASE_EARNINGS * 0.9).toFixed(6), (BASE_EARNINGS * 0.05).toFixed(6), (BASE_EARNINGS * 0.05).toFixed(6)],
     ];
     const csv = rows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -144,7 +133,7 @@ function PageHeader() {
         alert(`❌ Error: ${data.error}`);
       }
     } catch (err) {
-      alert("❌ Withdrawal failed. Is the payment server running?");
+      alert("❌ Withdrawal failed.");
     } finally {
       setWithdrawing(false);
     }
@@ -157,7 +146,11 @@ function PageHeader() {
         <h1 className="mt-2 text-4xl font-semibold tracking-tight md:text-5xl">Creator</h1>
         <p className="mt-1 text-muted-foreground">
           Welcome back, <span className="text-foreground">@delphi.research</span>.
-          {sellerBalance && <span className="ml-2 font-mono text-xs text-primary">${sellerBalance} USDC available</span>}
+          {sellerBalance && (
+            <span className="ml-2 font-mono text-xs text-primary">
+              ${sellerBalance} USDC available · <span className="text-muted-foreground">real · Arc Testnet</span>
+            </span>
+          )}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -170,11 +163,23 @@ function PageHeader() {
   );
 }
 
-function KPI({ label, value, delta, highlight }: { label: string; value: string; delta: string; highlight?: boolean }) {
+function KPI({ label, value, delta, highlight, demo }: { label: string; value: string; delta: string; highlight?: boolean; demo?: boolean }) {
   return (
-    <div className={`glass-strong relative overflow-hidden rounded-2xl p-5 ${highlight ? "" : ""}`}>
+    <div className={`glass-strong relative overflow-hidden rounded-2xl p-5`}>
       {highlight && <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary/30 blur-3xl" />}
-      <div className="font-mono text-[10px] uppercase text-muted-foreground">{label}</div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="font-mono text-[10px] uppercase text-muted-foreground">{label}</div>
+        {demo && (
+          <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[9px] text-muted-foreground">
+            Simulated
+          </span>
+        )}
+        {highlight && (
+          <span className="rounded-full bg-primary/20 px-2 py-0.5 font-mono text-[9px] text-primary">
+            Real · Arc
+          </span>
+        )}
+      </div>
       <div className={`mt-2 font-mono text-2xl tabular-nums ${highlight ? "text-gradient" : ""}`}>{value}</div>
       <div className="mt-1 text-xs text-primary">{delta}</div>
     </div>
@@ -187,7 +192,7 @@ function RevenueChart() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Revenue · 30 days</h3>
-          <p className="text-xs text-muted-foreground">USDC settled · net of protocol fees</p>
+          <p className="text-xs text-muted-foreground">USDC settled · net of protocol fees · <span className="text-yellow-500/70">Simulated data</span></p>
         </div>
         <div className="flex rounded-full border border-white/10 bg-white/5 p-1 text-xs">
           {["24h", "7d", "30d", "90d"].map((t, i) => (
@@ -240,7 +245,7 @@ function AgentFeed() {
         <div className="flex items-center gap-2 font-mono text-xs uppercase text-muted-foreground">
           <span className="h-1.5 w-1.5 animate-pulse-dot rounded-full bg-primary" /> Agent activity
         </div>
-        <span className="text-xs text-muted-foreground">live</span>
+        <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[9px] text-muted-foreground">Simulated</span>
       </div>
       <div className="divide-y divide-white/5 max-h-[360px] overflow-hidden">
         {items.map((it, idx) => (
@@ -279,7 +284,10 @@ function TopArticles() {
     <div className="glass rounded-3xl p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Top articles</h3>
-        <TrendingUp className="h-4 w-4 text-primary" />
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-primary" />
+          <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[9px] text-muted-foreground">Simulated</span>
+        </div>
       </div>
       <div className="mt-4 divide-y divide-white/5">
         {top.map((a, i) => (
@@ -312,7 +320,10 @@ function AudienceInsights() {
     <div className="glass rounded-3xl p-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Audience insights</h3>
-        <Globe className="h-4 w-4 text-primary" />
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[9px] text-muted-foreground">Simulated</span>
+        </div>
       </div>
       <div className="mt-5 flex h-3 overflow-hidden rounded-full">
         {regions.map((r) => <div key={r.r} style={{ width: `${r.v}%`, background: r.c }} />)}
