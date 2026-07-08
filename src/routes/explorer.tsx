@@ -66,6 +66,9 @@ function Explorer() {
           <div>
             <div className="font-mono text-xs uppercase tracking-widest text-primary">Network</div>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight md:text-5xl">Transaction Explorer</h1>
+            <div className="mt-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-4 py-2 font-mono text-xs text-yellow-500/70">
+  Simulated testnet activity · transaction data is generated for demonstration purposes
+</div>
             <p className="mt-1 text-muted-foreground">Real-time micropayments · Arc Testnet · Block #{(18_402_188).toLocaleString()}</p>
           </div>
           <div className="glass flex items-center gap-2 rounded-full px-4 py-2">
